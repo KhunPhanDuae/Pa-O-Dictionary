@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="mya">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ပအိုဝ်ႏအဘိဓာန်ႏ - Pa'O Online Dictionary</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Frame -->
+  <header>
+    <div class="logo">
+      <i class="fa-solid fa-book-bookmark"></i>
+      <span>ပအိုဝ်ႏအဘိဓာန်ႏ</span>
+    </div>
+    <button class="menu-btn" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
+  </header>
+
+  <!-- Side Navigation Drawer Frame -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div>
+      <div class="drawer-header">
+        <h3 style="color:var(--accent);">မီးနူးစာရင်း</h3>
+        <button class="menu-btn" onclick="toggleDrawer()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <ul class="drawer-menu">
+        <li><a href="#" onclick="switchView('home'); toggleDrawer();"><i class="fa-solid fa-house"></i> ပင်မစာမျက်နှာ</a></li>
+        <li><a href="#" onclick="openModAuth('dashboard'); toggleDrawer();"><i class="fa-solid fa-user-shield"></i> စိစစ်သူ Dashboard</a></li>
+        <li><a href="#" onclick="openModAuth('rejected'); toggleDrawer();"><i class="fa-solid fa-ban"></i> ငြင်းပယ်ထားသော စကားလုံးများ</a></li>
+      </ul>
+    </div>
+    <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+      <a href="#" onclick="openAddModal(); toggleDrawer();" style="color: var(--accent); text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-plus-circle"></i> စကားလုံးအသစ်ထည့်ရန်
+      </a>
+    </div>
+  </div>
+
+  <!-- View 1: General Viewer Home Page -->
+  <div class="container" id="homeView">
+    <div class="sticky-search-container">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" onkeyup="renderViewerWords()" placeholder="စကားလုံး သို့မဟုတ် အဓိပ္ပာယ် ရှာဖွေရန်...">
+      </div>
+    </div>
+    <div class="word-list" id="wordListDisplay"></div>
+  </div>
+
+  <!-- View 2: Moderator Dashboard Page -->
+  <div class="container" id="modDashboardView" style="display: none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">
+      <h3 style="color:var(--warning);"><i class="fa-solid fa-user-shield"></i> စိစစ်သူ Dashboard</h3>
+      <button class="btn btn-outline" style="width:auto; padding: 0.4rem 0.8rem;" onclick="switchView('home')"><i class="fa-solid fa-arrow-left"></i> အဘိဓာန်သို့</button>
+    </div>
+    <div class="sticky-search-container">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="modSearchInput" onkeyup="renderModQueue()" placeholder="စိစစ်ရန် စကားလုံး သို့မဟုတ် တင်သွင်းသူ ရှာဖွေရန်...">
+      </div>
+    </div>
+    <div class="word-list" id="modPendingList"></div>
+  </div>
+
+  <!-- View 3: Rejected Words Page -->
+  <div class="container" id="rejectedView" style="display: none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">
+      <h3 style="color:var(--danger);"><i class="fa-solid fa-ban"></i> ငြင်းပယ်ထားသော စကားလုံးများ</h3>
+      <button class="btn btn-outline" style="width:auto; padding: 0.4rem 0.8rem;" onclick="switchView('home')"><i class="fa-solid fa-arrow-left"></i> အဘိဓာန်သို့</button>
+    </div>
+    <div class="sticky-search-container">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="rejectedSearchInput" onkeyup="renderRejectedQueue()" placeholder="ငြင်းပယ်ထားသော စကားလုံး သို့မဟုတ် တင်သွင်းသူ ရှာဖွေရန်...">
+      </div>
+    </div>
+    <div class="word-list" id="rejectedList"></div>
+  </div>
+
+  <!-- Floating Scroll-to-Top Button -->
+  <button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()" title="အပေါ်သို့ ပြန်တက်မည်">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Modal 1: Add Word Form -->
+  <div class="modal" id="addWordModal">
+    <div class="modal-content">
+      <h3 style="color:var(--accent); margin-bottom: 1rem;"><i class="fa-solid fa-pen"></i> စကားလုံးအသစ် တင်သွင်းရန်</h3>
+      <form onsubmit="handleContributorSubmit(event)">
+        <div class="form-group">
+          <label>တင်သွင်းသူ နာမည်:</label>
+          <input type="text" id="cName" placeholder="ဥပမာ - ခွန်ဖန်ဒွဲ့" required>
+        </div>
+        <div class="form-group">
+          <label>ပအိုဝ်ႏ စကားလုံး:</label>
+          <input type="text" id="cPao" placeholder="ဥပမာ - စိဉ်ꩻစာꩻသေ" required>
+        </div>
+        <div class="form-group">
+          <label>အမျိုးအစား:</label>
+          <select id="cType">
+            <option value="နာမ်">နာမ် (Noun)</option>
+            <option value="ကြိယာ">ကြိယာ (Verb)</option>
+            <option value="ကြိယာဝိသေသန">ကြိယာဝိသေသန (Adverb)</option>
+            <option value="စကားစု">စကားစု (Phrase)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>မြန်မာ အဓိပ္ပာယ်:</label>
+          <textarea id="cMeaning" rows="2" placeholder="ရှင်းလင်းချက် ထည့်ပါ..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label>သုံးစွဲပုံ ဥပမာ ဝါကျ:</label>
+          <input type="text" id="cExample" placeholder="ဝါကျ ဥပမာ..." required>
+        </div>
+        <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> စိစစ်သူထံ ပေးပို့မည်</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('addWordModal')">မလုပ်ဆောင်တော့ပါ</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Moderator Auth Form -->
+  <div class="modal" id="modAuthModal">
+    <div class="modal-content">
+      <h3 style="color:var(--warning); margin-bottom: 1rem;"><i class="fa-solid fa-lock"></i> စိစစ်သူ စိစစ်ရေး</h3>
+      <form onsubmit="handleModLogin(event)">
+        <div class="form-group">
+          <label>စိစစ်သူ အမည်:</label>
+          <input type="text" id="modName" placeholder="အမည် ရိုက်ထည့်ပါ" required>
+        </div>
+        <div class="form-group">
+          <label>စိစစ်သူ ID:</label>
+          <input type="password" id="modId" placeholder="ID ရိုက်ထည့်ပါ" required>
+        </div>
+        <button type="submit" class="btn"><i class="fa-solid fa-right-to-bracket"></i> စနစ်အတွင်း ဝင်ရောက်မည်</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('modAuthModal')">မလုပ်ဆောင်တော့ပါ</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toastMsg"></div>
+
+  <!-- ES Modules Loading -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
