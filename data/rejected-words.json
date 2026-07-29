@@ -1,11 +1,12 @@
 [
   {
-    "id": 4,
-    "pao": "စမ်းသပ်စကားလုံး",
-    "type": "စကားစု",
-    "meaning": "မမှန်ကန်သော အဓိပ္ပာယ်ဖြည့်သွင်းချက်",
-    "example": "ဥပမာ စကားစု",
-    "contributor": "မသိသူတစ်ဦး",
-    "status": "rejected"
+    "id": 3,
+    "pao": "တ",
+    "type": "နာမ်ႏ",
+    "meaning": "န",
+    "example": "န",
+    "contributor": "မ",
+    "status": "rejected",
+    "created_at": "2026-07-29T15:17:17.672575+00:00"
   }
 ]
