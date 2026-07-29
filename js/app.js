@@ -1,42 +1,79 @@
 import { supabase } from './supabaseClient.js';
-import { GITHUB_TOKEN, GITHUB_REPO, GITHUB_BRANCH } from './config.js';
+import { AUTHORIZED_MODERATORS } from './config.js';
+import { createApprovedCard, createPendingCard, createRejectedCard } from './templates.js';
 
-// Supabase မှ ဒေတာအပြည့်အစုံကို ယူ၍ GitHub data/ ဖိုဒါထဲသို့ Sync မည်
-async function syncSupabaseToGitHub() {
-  // 1. Supabase မှ Approved စကားလုံးများ ဆွဲယူခြင်း
-  const { data: approvedWords } = await supabase
-    .from('words')
-    .select('*')
-    .eq('status', 'approved');
+let approvedWords = [];
+let pendingWords = [];
+let rejectedWords = [];
 
-  // 2. GitHub REST API ဖြင့် data/approved-words.json သို့ Commit ပြုလုပ်ခြင်း
-  const filePath = 'data/approved-words.json';
-  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+// 1. GitHub Repository ရဲ့ data/ ဖိုဒါထဲမှ JSON ဖိုင်များကို ဖတ်ယူခြင်း
+async function loadDataFromGitHub() {
+  try {
+    const [resApproved, resPending, resRejected] = await Promise.all([
+      fetch('data/approved-words.json?cache=' + Date.now()),
+      fetch('data/pending-words.json?cache=' + Date.now()),
+      fetch('data/rejected-words.json?cache=' + Date.now())
+    ]);
 
-  // GitHub ရှိ ဖိုင်အဟောင်း၏ SHA ယူခြင်း
-  const fileRes = await fetch(url, {
-    headers: { Authorization: `token ${GITHUB_TOKEN}` }
-  });
-  const fileData = await fileRes.json();
-  const sha = fileData.sha;
+    approvedWords = resApproved.ok ? await resApproved.json() : [];
+    pendingWords = resPending.ok ? await resPending.json() : [];
+    rejectedWords = resRejected.ok ? await resRejected.json() : [];
 
-  // JSON ဒေတာ ပြင်ဆင်ခြင်း
-  const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(approvedWords, null, 2))));
-
-  // GitHub သို့ Auto Commit မည်
-  await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: 'Auto Sync: Update dictionary JSON from Supabase',
-      content: updatedContent,
-      sha: sha,
-      branch: GITHUB_BRANCH
-    })
-  });
-  
-  console.log('GitHub data/ Folder သို့ ဒေတာများ Auto Sync ဖြစ်သွားပါပြီ။');
+    renderViewerWords();
+  } catch (err) {
+    console.error('GitHub JSON ဖတ်ယူရာတွင် အမှားရှိသည်:', err);
+  }
 }
+
+// Render Functions (GitHub မှရသော Data များကို ပြသပေးမည်)
+window.renderViewerWords = function () {
+  const display = document.getElementById('wordListDisplay');
+  const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  display.innerHTML = '';
+
+  const items = approvedWords.filter(d => d.pao.toLowerCase().includes(query) || d.meaning.toLowerCase().includes(query));
+  if (items.length === 0) {
+    display.innerHTML = `<p style="color:var(--text-sub); text-align:center; padding: 2rem;">အတည်ပြုပြီး စကားလုံး မရှိသေးပါ။</p>`;
+    return;
+  }
+  display.innerHTML = items.map(createApprovedCard).join('');
+};
+
+window.renderModQueue = function () {
+  const display = document.getElementById('modPendingList');
+  const query = (document.getElementById('modSearchInput')?.value || '').toLowerCase();
+  display.innerHTML = '';
+
+  const items = pendingWords.filter(d => d.pao.toLowerCase().includes(query) || d.meaning.toLowerCase().includes(query));
+  if (items.length === 0) {
+    display.innerHTML = `<p style="color:var(--text-sub); text-align:center; padding: 2rem;">စိစစ်ရန် စကားလုံး မရှိပါ။</p>`;
+    return;
+  }
+  display.innerHTML = items.map(createPendingCard).join('');
+};
+
+// 2. စကားလုံးအသစ် ပို့ပါက Supabase ထဲသို့ ရေးမည်
+window.handleContributorSubmit = async function (e) {
+  e.preventDefault();
+  const newEntry = {
+    pao: document.getElementById('cPao').value.trim(),
+    type: document.getElementById('cType').value,
+    meaning: document.getElementById('cMeaning').value.trim(),
+    example: document.getElementById('cExample').value.trim(),
+    contributor: document.getElementById('cName').value.trim(),
+    status: 'pending'
+  };
+
+  const { error } = await supabase.from('words').insert([newEntry]);
+
+  if (error) {
+    alert('အချက်အလက် ပေးပို့ရာတွင် အမှားအယွင်းရှိပါသည်: ' + error.message);
+  } else {
+    closeModal('addWordModal');
+    showToast('စကားလုံးအသစ် တင်သွင်းပြီးပါပြီ။ Sync ဖြစ်ပြီးပါက GitHub တွင် ပေါ်လာပါလိမ့်မည်။');
+    e.target.reset();
+  }
+};
+
+// Initial Load
+loadDataFromGitHub();
