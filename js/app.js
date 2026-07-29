@@ -6,7 +6,7 @@ let dictionaryData = [];
 let currentActiveMod = null;
 let targetViewAfterAuth = 'dashboard';
 
-// 1. Supabase မှ ဒေတာများ ဆွဲယူခြင်း (Fetch All Words)
+// Fetch Data from Supabase
 async function fetchWordsFromSupabase() {
   const { data, error } = await supabase
     .from('words')
@@ -22,7 +22,7 @@ async function fetchWordsFromSupabase() {
   renderCurrentView();
 }
 
-// 2. Real-time Subscription (ဒေတာ အပြောင်းအလဲရှိလျှင် စက်တိုင်း၌ Auto Sync ဖြစ်မည်)
+// Real-time Listener (Auto Sync across phones)
 function subscribeToRealtimeChanges() {
   supabase
     .channel('public:words')
@@ -44,7 +44,7 @@ window.renderViewerWords = function () {
   const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
   display.innerHTML = '';
 
-  const items = dictionaryData.filter(d => d.status === 'approved' && (d.pao.toLowerCase().includes(query) || d.meaning.includes(query)));
+  const items = dictionaryData.filter(d => d.status === 'approved' && (d.pao.toLowerCase().includes(query) || d.meaning.toLowerCase().includes(query)));
   if (items.length === 0) {
     display.innerHTML = `<p style="color:var(--text-sub); text-align:center; padding: 2rem;">အတည်ပြုပြီး စကားလုံး မရှိသေးပါ။</p>`;
     return;
@@ -57,7 +57,7 @@ window.renderModQueue = function () {
   const query = (document.getElementById('modSearchInput')?.value || '').toLowerCase();
   display.innerHTML = '';
 
-  const items = dictionaryData.filter(d => d.status === 'pending' && (d.pao.toLowerCase().includes(query) || d.meaning.includes(query) || (d.contributor && d.contributor.toLowerCase().includes(query))));
+  const items = dictionaryData.filter(d => d.status === 'pending' && (d.pao.toLowerCase().includes(query) || d.meaning.toLowerCase().includes(query) || (d.contributor && d.contributor.toLowerCase().includes(query))));
   if (items.length === 0) {
     display.innerHTML = `<p style="color:var(--text-sub); text-align:center; padding: 2rem;">စိစစ်ရန် စကားလုံး မရှိပါ။</p>`;
     return;
@@ -70,7 +70,7 @@ window.renderRejectedQueue = function () {
   const query = (document.getElementById('rejectedSearchInput')?.value || '').toLowerCase();
   display.innerHTML = '';
 
-  const items = dictionaryData.filter(d => d.status === 'rejected' && (d.pao.toLowerCase().includes(query) || d.meaning.includes(query) || (d.contributor && d.contributor.toLowerCase().includes(query))));
+  const items = dictionaryData.filter(d => d.status === 'rejected' && (d.pao.toLowerCase().includes(query) || d.meaning.toLowerCase().includes(query) || (d.contributor && d.contributor.toLowerCase().includes(query))));
   if (items.length === 0) {
     display.innerHTML = `<p style="color:var(--text-sub); text-align:center; padding: 2rem;">ငြင်းပယ်ထားသော စကားလုံး မရှိပါ။</p>`;
     return;
@@ -78,15 +78,15 @@ window.renderRejectedQueue = function () {
   display.innerHTML = items.map(createRejectedCard).join('');
 };
 
-// 3. စကားလုံးအသစ် တင်သွင်းခြင်း (Supabase Insert)
+// Form Handlers
 window.handleContributorSubmit = async function (e) {
   e.preventDefault();
   const newEntry = {
-    pao: document.getElementById('cPao').value,
+    pao: document.getElementById('cPao').value.trim(),
     type: document.getElementById('cType').value,
-    meaning: document.getElementById('cMeaning').value,
-    example: document.getElementById('cExample').value,
-    contributor: document.getElementById('cName').value,
+    meaning: document.getElementById('cMeaning').value.trim(),
+    example: document.getElementById('cExample').value.trim(),
+    contributor: document.getElementById('cName').value.trim(),
     status: 'pending'
   };
 
@@ -101,7 +101,7 @@ window.handleContributorSubmit = async function (e) {
   }
 };
 
-// 4. Global Event Delegation (Approve, Reject, Restore, Delete)
+// Global Button Delegation
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
@@ -126,7 +126,7 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-// UI View Switchers & Authentication Logic
+// UI Navigation Controllers
 window.toggleDrawer = function () {
   document.getElementById('drawer').classList.toggle('active');
   document.getElementById('drawerOverlay').classList.toggle('active');
@@ -179,12 +179,24 @@ window.handleModLogin = function (e) {
   }
 };
 
+window.scrollToTop = function () {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.onscroll = function () {
+  const btn = document.getElementById('scrollTopBtn');
+  if (btn) {
+    btn.style.display = (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) ? 'flex' : 'none';
+  }
+};
+
 function showToast(msg) {
   const toast = document.getElementById('toastMsg');
-  toast.innerText = msg; toast.style.display = 'block';
+  toast.innerText = msg;
+  toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// Initial Loading Logic
+// App Initialization
 fetchWordsFromSupabase();
 subscribeToRealtimeChanges();
