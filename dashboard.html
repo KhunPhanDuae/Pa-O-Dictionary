@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>စိစစ်ရေး Dashboard - ပအိုဝ်ႏအဘိဓာန်</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --primary: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+    body { background-color: var(--bg-main); color: var(--text-main); font-family: sans-serif; margin: 0; padding: 0; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+    .container { max-width: 600px; margin: auto; padding: 1.5rem; }
+    .search-box { width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; margin-bottom: 1.5rem; box-sizing: border-box; }
+    .word-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+    .word-pao { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin: 0 0 5px 0; }
+    .badge { background: rgba(16, 185, 129, 0.15); color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+    .btn { border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; color: #fff; font-weight: bold; }
+    .btn-success { background: var(--primary); }
+    .btn-warning { background: var(--warning); }
+    .btn-danger { background: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h3><i class="fa-solid fa-shield-halved"></i> စိစစ်ရေး Dashboard</h3>
+    <a href="index.html" class="btn" style="background:#64748b; text-decoration:none; font-size:0.9rem;">အဘိဓာန်သို့</a>
+  </header>
+
+  <div class="container">
+    <div style="display:flex; gap:10px; margin-bottom:1rem;">
+      <button class="btn btn-success" onclick="switchTab('pending')" id="tabPending">စိစစ်ရန်</button>
+      <button class="btn btn-danger" onclick="switchTab('rejected')" id="tabRejected">ငြင်းပယ်ပြီး</button>
+    </div>
+
+    <!-- Pending Queue -->
+    <div id="pendingSection">
+      <input type="text" id="modSearchInput" class="search-box" placeholder="စိစစ်ရန် စကားလုံးများကို ရှာရန်..." oninput="renderModQueue()">
+      <div id="modPendingList"></div>
+    </div>
+
+    <!-- Rejected Queue -->
+    <div id="rejectedSection" style="display:none;">
+      <input type="text" id="rejectedSearchInput" class="search-box" placeholder="ငြင်းပယ်ထားသော စကားလုံးများကို ရှာရန်..." oninput="renderRejectedQueue()">
+      <div id="rejectedList"></div>
+    </div>
+  </div>
+
+  <div id="toastMsg" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#10b981; color:#fff; padding:10px 20px; border-radius:8px;"></div>
+
+  <script>
+    function switchTab(tab) {
+      document.getElementById('pendingSection').style.display = tab === 'pending' ? 'block' : 'none';
+      document.getElementById('rejectedSection').style.display = tab === 'rejected' ? 'block' : 'none';
+      if(tab === 'pending') renderModQueue();
+      if(tab === 'rejected') renderRejectedQueue();
+    }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
