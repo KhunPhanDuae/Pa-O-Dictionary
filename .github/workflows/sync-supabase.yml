@@ -1,0 +1,54 @@
+name: Sync Supabase to GitHub Data
+
+on:
+  repository_dispatch:
+    types: [supabase_update] # Supabase Webhook မှ လှမ်းခေါ်ပါက အလုပ်လုပ်မည်
+  schedule:
+    - cron: '*/15 * * * *'  # မိနစ် ၁၅ တိုင်းတွင်လည်း Auto Sync လုပ်ပေးမည်
+  workflow_dispatch:          # GitHub Dashboard မှ Manual နှိပ်၍လည်း Run နိုင်မည်
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Fetch and Save Data from Supabase
+        env:
+          SUPABASE_URL: "https://eotevqndvmxrtbzjsqyt.supabase.co"
+          SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdGV2cW5kdm14cnRiempzcXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjM2NDksImV4cCI6MjEwMDg5OTY0OX0.k-2w2PFd_2r0X8WX7UYrL3SdBbfE3CegX4VJNqPlxmc"
+        run: |
+          node -e '
+          const fs = require("fs");
+          async function sync() {
+            const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/words?select=*`, {
+              headers: { "apikey": process.env.SUPABASE_ANON_KEY, "Authorization": `Bearer ${process.env.SUPABASE_ANON_KEY}` }
+            });
+            const data = await res.json();
+            
+            const approved = data.filter(d => d.status === "approved");
+            const pending = data.filter(d => d.status === "pending");
+            const rejected = data.filter(d => d.status === "rejected");
+
+            if (!fs.existsSync("data")) fs.mkdirSync("data");
+
+            fs.writeFileSync("data/approved-words.json", JSON.stringify(approved, null, 2));
+            fs.writeFileSync("data/pending-words.json", JSON.stringify(pending, null, 2));
+            fs.writeFileSync("data/rejected-words.json", JSON.stringify(rejected, null, 2));
+            console.log("JSON files updated successfully.");
+          }
+          sync();
+          '
+
+      - name: Commit and Push to GitHub
+        run: |
+          git config --global user.name "GitHub Sync Bot"
+          git config --global user.email "bot@github.com"
+          git add data/*.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync dictionary data from Supabase" && git push)
