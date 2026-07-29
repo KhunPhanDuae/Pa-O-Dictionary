@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": 1,
+    "pao": "မ",
+    "type": "ငဝ်းစု",
+    "meaning": "်",
+    "example": "၁၁၁၁၁၁",
+    "contributor": "အ",
+    "status": "pending",
+    "created_at": "2026-07-29T17:20:10.039179+00:00"
+  },
+  {
+    "id": 3,
+    "pao": "မမ",
+    "type": "နာမ်ႏ",
+    "meaning": "မမ",
+    "example": "မမ",
+    "contributor": "မမ",
+    "status": "pending",
+    "created_at": "2026-07-29T17:23:35.303874+00:00"
+  }
+]
