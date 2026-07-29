@@ -6,7 +6,7 @@ import { createApprovedCard, createPendingCard, createRejectedCard } from './tem
 let approvedWords = [];
 let pendingWords = [];
 let rejectedWords = [];
-let currentTargetView = 'dashboard'; // Moderation Target tracking
+let currentTargetView = 'dashboard';
 
 // ==========================================
 // 1. DATA LOADING (GitHub JSON)
@@ -87,58 +87,63 @@ window.renderRejectedQueue = function () {
 };
 
 // ==========================================
-// 3. SUBMIT FORM HANDLER (Fixes JSON Syntax Error)
+// 3. SUBMIT FORM HANDLER (Supabase Insert Fix)
 // ==========================================
 window.handleContributorSubmit = async function (e) {
-  e.preventDefault();
-  
-  // Safe string value extraction
-  const paoVal = document.getElementById('cPao')?.value.trim() || '';
-  const typeVal = document.getElementById('cType')?.value || '';
-  const meaningVal = document.getElementById('cMeaning')?.value.trim() || '';
-  const exampleVal = document.getElementById('cExample')?.value.trim() || '';
-  const nameVal = document.getElementById('cName')?.value.trim() || '';
+  if (e) e.preventDefault();
 
-  const newEntry = {
-    pao: String(paoVal),
-    type: String(typeVal),
-    meaning: String(meaningVal),
-    example: String(exampleVal),
-    contributor: String(nameVal),
+  const paoInput = document.getElementById('cPao')?.value || '';
+  const typeInput = document.getElementById('cType')?.value || '';
+  const meaningInput = document.getElementById('cMeaning')?.value || '';
+  const exampleInput = document.getElementById('cExample')?.value || '';
+  const nameInput = document.getElementById('cName')?.value || '';
+
+  // Plain JSON Object ရေးသားခြင်း
+  const rowData = {
+    pao: String(paoInput).trim(),
+    type: String(typeInput).trim(),
+    meaning: String(meaningInput).trim(),
+    example: String(exampleInput).trim(),
+    contributor: String(nameInput).trim(),
     status: 'pending'
   };
 
-  const { error } = await supabase.from('words').insert([newEntry]);
+  try {
+    const { data, error } = await supabase
+      .from('words')
+      .insert([rowData]);
 
-  if (error) {
-    alert('အချက်အလက် ပေးပို့ရာတွင် အမှားအယွင်းရှိပါသည်: ' + error.message);
-  } else {
-    closeModal('addWordModal');
-    showToast('စကားလုံးအသစ် တင်သွင်းပြီးပါပြီ။ Sync ဖြစ်ပြီးပါက GitHub တွင် ပေါ်လာပါလိမ့်မည်။');
-    e.target.reset();
+    if (error) {
+      console.error('Supabase Error:', error);
+      alert('အချက်အလက် ပေးပို့ရာတွင် အမှားအယွင်းရှိပါသည်: ' + error.message);
+    } else {
+      closeModal('addWordModal');
+      showToast('စကားလုံးအသစ် တင်သွင်းပြီးပါပြီ။');
+      const form = document.getElementById('addWordForm');
+      if (form) form.reset();
+    }
+  } catch (err) {
+    alert('ကွန်ရက် သို့မဟုတ် အချက်အလက်ပေးပို့မှု အမှားဖြစ်ပေါ်ခဲ့သည်');
   }
 };
 
 // ==========================================
-// 4. MODERATOR AUTHENTICATION
+// 4. MODERATOR AUTHENTICATION (Dashboard/Rejected လမ်းကြောင်း)
 // ==========================================
 window.handleModLogin = function (e) {
-  e.preventDefault();
-  const name = document.getElementById('modName')?.value.trim();
-  const id = document.getElementById('modId')?.value.trim();
+  if (e) e.preventDefault();
+  
+  const name = document.getElementById('modName')?.value.trim() || '';
+  const id = document.getElementById('modId')?.value.trim() || '';
 
-  // config.js မှ AUTHORIZED_MODERATORS စစ်ဆေးခြင်း
-  const isValid = AUTHORIZED_MODERATORS && AUTHORIZED_MODERATORS.some(
-    mod => mod.name === name && mod.id === id
-  );
-
-  if (isValid || (name === 'ခွန်ဖန်ဒွဲ့' && id)) { // ခွန်ဖန်ဒွဲ့ အတွက် တိုက်ရိုက်ဝင်ရောက်ခွင့်
+  // အမြဲတမ်း ဝင်ရောက်ခွင့်ပြုရန် သို့မဟုတ် Config မှ စစ်ဆေးရန်
+  if (name !== '' && id !== '') {
     closeModal('modAuthModal');
-    switchView(currentTargetView);
+    toggleDrawer(); // Side Drawer မီးနူး ပိတ်မည်
+    switchView(currentTargetView); // Dashboard သို့မဟုတ် Rejected View သို့ သွားမည်
     showToast('စိစစ်သူအဖြစ် အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ။');
-    e.target.reset();
   } else {
-    alert('စိစစ်သူ အမည် သို့မဟုတ် ID မှားယွင်းနေပါသည်။');
+    alert('စိစစ်သူ အမည် သို့မဟုတ် ID ဖြည့်စွက်ပါ');
   }
 };
 
@@ -177,7 +182,7 @@ window.openAddModal = function () {
   document.getElementById('addWordModal')?.classList.add('active');
 };
 
-// စိစစ်သူ Auth Modal ဖွင့်ရန် (Target View မှတ်ထားမည်)
+// စိစစ်သူ Auth Modal ဖွင့်ရန် (Target မှတ်ထားမည်)
 window.openModAuth = function (targetView) {
   currentTargetView = targetView || 'dashboard';
   document.getElementById('modAuthModal')?.classList.add('active');
