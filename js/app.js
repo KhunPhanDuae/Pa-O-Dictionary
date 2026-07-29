@@ -6,6 +6,7 @@ import { createApprovedCard, createPendingCard, createRejectedCard } from './tem
 let approvedWords = [];
 let pendingWords = [];
 let rejectedWords = [];
+let currentTargetView = 'dashboard'; // Moderation Target tracking
 
 // ==========================================
 // 1. DATA LOADING (GitHub JSON)
@@ -38,8 +39,8 @@ window.renderViewerWords = function () {
   display.innerHTML = '';
 
   const items = approvedWords.filter(d => 
-    (d.pao && d.pao.toLowerCase().includes(query)) || 
-    (d.meaning && d.meaning.toLowerCase().includes(query))
+    (d.pao && String(d.pao).toLowerCase().includes(query)) || 
+    (d.meaning && String(d.meaning).toLowerCase().includes(query))
   );
   
   if (items.length === 0) {
@@ -56,8 +57,8 @@ window.renderModQueue = function () {
   display.innerHTML = '';
 
   const items = pendingWords.filter(d => 
-    (d.pao && d.pao.toLowerCase().includes(query)) || 
-    (d.meaning && d.meaning.toLowerCase().includes(query))
+    (d.pao && String(d.pao).toLowerCase().includes(query)) || 
+    (d.meaning && String(d.meaning).toLowerCase().includes(query))
   );
 
   if (items.length === 0) {
@@ -74,8 +75,8 @@ window.renderRejectedQueue = function () {
   display.innerHTML = '';
 
   const items = rejectedWords.filter(d => 
-    (d.pao && d.pao.toLowerCase().includes(query)) || 
-    (d.meaning && d.meaning.toLowerCase().includes(query))
+    (d.pao && String(d.pao).toLowerCase().includes(query)) || 
+    (d.meaning && String(d.meaning).toLowerCase().includes(query))
   );
 
   if (items.length === 0) {
@@ -86,16 +87,24 @@ window.renderRejectedQueue = function () {
 };
 
 // ==========================================
-// 3. SUBMIT FORM HANDLER (Supabase Insert)
+// 3. SUBMIT FORM HANDLER (Fixes JSON Syntax Error)
 // ==========================================
 window.handleContributorSubmit = async function (e) {
   e.preventDefault();
+  
+  // Safe string value extraction
+  const paoVal = document.getElementById('cPao')?.value.trim() || '';
+  const typeVal = document.getElementById('cType')?.value || '';
+  const meaningVal = document.getElementById('cMeaning')?.value.trim() || '';
+  const exampleVal = document.getElementById('cExample')?.value.trim() || '';
+  const nameVal = document.getElementById('cName')?.value.trim() || '';
+
   const newEntry = {
-    pao: document.getElementById('cPao').value.trim(),
-    type: document.getElementById('cType').value,
-    meaning: document.getElementById('cMeaning').value.trim(),
-    example: document.getElementById('cExample').value.trim(),
-    contributor: document.getElementById('cName').value.trim(),
+    pao: String(paoVal),
+    type: String(typeVal),
+    meaning: String(meaningVal),
+    example: String(exampleVal),
+    contributor: String(nameVal),
     status: 'pending'
   };
 
@@ -111,10 +120,33 @@ window.handleContributorSubmit = async function (e) {
 };
 
 // ==========================================
-// 4. UI & NAVIGATION CONTROLS (မီးနူးနှင့် Modal)
+// 4. MODERATOR AUTHENTICATION
+// ==========================================
+window.handleModLogin = function (e) {
+  e.preventDefault();
+  const name = document.getElementById('modName')?.value.trim();
+  const id = document.getElementById('modId')?.value.trim();
+
+  // config.js မှ AUTHORIZED_MODERATORS စစ်ဆေးခြင်း
+  const isValid = AUTHORIZED_MODERATORS && AUTHORIZED_MODERATORS.some(
+    mod => mod.name === name && mod.id === id
+  );
+
+  if (isValid || (name === 'ခွန်ဖန်ဒွဲ့' && id)) { // ခွန်ဖန်ဒွဲ့ အတွက် တိုက်ရိုက်ဝင်ရောက်ခွင့်
+    closeModal('modAuthModal');
+    switchView(currentTargetView);
+    showToast('စိစစ်သူအဖြစ် အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ။');
+    e.target.reset();
+  } else {
+    alert('စိစစ်သူ အမည် သို့မဟုတ် ID မှားယွင်းနေပါသည်။');
+  }
+};
+
+// ==========================================
+// 5. UI & NAVIGATION CONTROLS
 // ==========================================
 
-// Side Drawer မီးနူး ပွင့်/ပိတ် ပြုလုပ်ရန်
+// Side Drawer မီးနူး ပွင့်/ပိတ်
 window.toggleDrawer = function () {
   const drawer = document.getElementById('drawer');
   const overlay = document.getElementById('drawerOverlay');
@@ -124,7 +156,7 @@ window.toggleDrawer = function () {
   }
 };
 
-// စာမျက်နှာ (View) များ ပြောင်းလဲရန်
+// စာမျက်နှာ (View) ပြောင်းလဲရန်
 window.switchView = function (viewName) {
   const home = document.getElementById('homeView');
   const mod = document.getElementById('modDashboardView');
@@ -145,17 +177,18 @@ window.openAddModal = function () {
   document.getElementById('addWordModal')?.classList.add('active');
 };
 
-// စိစစ်သူ Auth Modal ဖွင့်ရန်
+// စိစစ်သူ Auth Modal ဖွင့်ရန် (Target View မှတ်ထားမည်)
 window.openModAuth = function (targetView) {
+  currentTargetView = targetView || 'dashboard';
   document.getElementById('modAuthModal')?.classList.add('active');
 };
 
-// Modal များ ပိတ်ရန်
+// Modal ပိတ်ရန်
 window.closeModal = function (modalId) {
   document.getElementById(modalId)?.classList.remove('active');
 };
 
-// Toast အသိပေးချက် ပြသရန်
+// Toast အသိပေးချက်
 window.showToast = function (msg) {
   const toast = document.getElementById('toastMsg');
   if (toast) {
@@ -167,7 +200,7 @@ window.showToast = function (msg) {
   }
 };
 
-// အပေါ်သို့ ပြန်တက်သည့် ခလုတ်
+// Scroll to Top
 window.scrollToTop = function () {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
