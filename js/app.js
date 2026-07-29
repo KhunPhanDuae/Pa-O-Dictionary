@@ -2,7 +2,6 @@ import { supabase } from './supabaseClient.js';
 import { AUTHORIZED_MODERATORS } from './config.js';
 import { createApprovedCard, createPendingCard, createRejectedCard } from './templates.js';
 
-// Global Data Arrays
 let approvedWords = [];
 let pendingWords = [];
 let rejectedWords = [];
@@ -98,6 +97,7 @@ window.handleContributorSubmit = async function (e) {
   const meaningVal = document.getElementById('cMeaning')?.value || '';
   const exampleVal = document.getElementById('cExample')?.value || '';
 
+  // JSON Syntax Error မတက်စေရန် Plain Object သက်သက်ဖြင့် ပို့မည်
   const newEntry = {
     pao: String(paoVal).trim(),
     type: String(typeVal).trim(),
@@ -108,25 +108,27 @@ window.handleContributorSubmit = async function (e) {
   };
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('words')
       .insert([newEntry]);
 
     if (error) {
-      alert('အချက်အလက် ပေးပို့ရာတွင် အမှားအယွင်းရှိပါသည်: ' + error.message);
+      alert('အချက်အလက် ပေးပို့ရာတွင် အမှားရှိသည်: ' + error.message);
     } else {
       closeModal('addWordModal');
-      showToast('စကားလုံးအသစ် အောင်မြင်စွာ ပေးပို့ပြီးပါပြီ။');
+      showToast('စကားလုံးအသစ် အောင်မြင်စွာ တင်သွင်းပြီးပါပြီ။');
       if (e.target && e.target.reset) e.target.reset();
     }
   } catch (err) {
-    alert('ကွန်ရက် အဆင်မပြေပါ၊ နောက်မှ ပြန်လည် ကြိုးစားပါ။');
+    alert('ကွန်ရက်ချိတ်ဆက်မှု အဆင်မပြေပါ။');
   }
 };
 
 // ==========================================
-// 4. MODERATOR ACTIONS (အတည်ပြု / ငြင်းပယ် ခလုတ်များ)
+// 4. MODERATOR ACTIONS (Status ပြောင်းလဲခြင်း & ဖျက်ခြင်း)
 // ==========================================
+
+// အတည်ပြုမည် (pending -> approved)
 window.approveWord = async function (id) {
   if (!id) return;
   try {
@@ -139,7 +141,6 @@ window.approveWord = async function (id) {
       alert('အတည်ပြုရာတွင် အမှားရှိသည်: ' + error.message);
     } else {
       showToast('စကားလုံးကို အတည်ပြုလိုက်ပါပြီ။');
-      // Pending List ထဲမှ ဖယ်ထုတ်ပြီး UI Re-render လုပ်မည်
       pendingWords = pendingWords.filter(item => item.id !== id);
       renderModQueue();
     }
@@ -148,6 +149,7 @@ window.approveWord = async function (id) {
   }
 };
 
+// ငြင်းပယ်မည် (pending -> rejected)
 window.rejectWord = async function (id) {
   if (!id) return;
   try {
@@ -165,6 +167,50 @@ window.rejectWord = async function (id) {
     }
   } catch (err) {
     console.error('Reject Error:', err);
+  }
+};
+
+// စိစစ်မှုဌာနသို့ ပြန်သွင်းမည် (rejected -> pending)
+window.restoreWord = async function (id) {
+  if (!id) return;
+  try {
+    const { error } = await supabase
+      .from('words')
+      .update({ status: 'pending' })
+      .eq('id', id);
+
+    if (error) {
+      alert('ပြန်လည်တင်သွင်းရာတွင် အမှားရှိသည်: ' + error.message);
+    } else {
+      showToast('စကားလုံးကို စိစစ်ရန်သို့ ပြန်လည်ပို့ဆောင်လိုက်ပါပြီ။');
+      rejectedWords = rejectedWords.filter(item => item.id !== id);
+      renderRejectedQueue();
+    }
+  } catch (err) {
+    console.error('Restore Error:', err);
+  }
+};
+
+// အပြီးတိုင်ဖျက်မည် (Delete from DB)
+window.deleteWordCompletely = async function (id) {
+  if (!id) return;
+  if (!confirm('ဤစကားလုံးကို အပြီးတိုင် ဖျက်မည်မှာ သေချာပါသလား။')) return;
+  
+  try {
+    const { error } = await supabase
+      .from('words')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('ဖျက်ဆီးရာတွင် အမှားရှိသည်: ' + error.message);
+    } else {
+      showToast('စကားလုံးကို အပြီးတိုင် ဖျက်ဆီးပြီးပါပြီ။');
+      rejectedWords = rejectedWords.filter(item => item.id !== id);
+      renderRejectedQueue();
+    }
+  } catch (err) {
+    console.error('Delete Error:', err);
   }
 };
 
