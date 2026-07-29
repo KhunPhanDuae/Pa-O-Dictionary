@@ -3,7 +3,7 @@ import { createApprovedCard, createPendingCard, createRejectedCard } from './tem
 // --- GitHub Config ---
 const GITHUB_OWNER = 'KhunPhanDuae'; // ကိုယ့်ရဲ့ GitHub Username အမှန်
 const GITHUB_REPO = 'Pa-O-Dictionary'; // ကိုယ့်ရဲ့ Repo နာမည်အမှန်
-const GITHUB_TOKEN = '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'; // GitHub Token ထည့်ရန်
+const GITHUB_TOKEN = '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'; // GitHub Token ထည့်ရန်
 
 let approvedWords = [];
 let pendingWords = [];
